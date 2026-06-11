@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { Chart, registerables } from 'chart.js';
 import { ChartModule, UIChart } from 'primeng/chart';
-import { FUEL_CAPACITY_LITERS, RouteEvent } from '../../../models/plan.model';
+import { FUEL_CAPACITY_LITERS, RouteEvent, getPlanChartBorderColor, getPlanChartColor, getPlanChartFillColor } from '../../../models/plan.model';
 import {
   OpDashPlanInput,
   PlanFuelSummary,
@@ -19,9 +19,7 @@ import {
   buildPlanFuelSummaries,
 } from '../../../utils/plan-fuel.util';
 
-const CHART_PRIMARY = '#10b981';
-const CHART_PRIMARY_DARK = '#059669';
-const CHART_PRIMARY_LIGHT = '#34d399';
+const THEME_NAVY = '#1e3a6b';
 const CHART_TEXT = '#334155';
 const CHART_GRID = '#e2e8f0';
 
@@ -37,6 +35,7 @@ Chart.register(...registerables);
 export class OpDashPanelComponent implements OnChanges, AfterViewInit {
   @Input({ required: true }) plans: OpDashPlanInput[] = [];
   @Input({ required: true }) routeEvents: RouteEvent[] = [];
+  @Input() compact = false;
 
   @ViewChild('barChart') private barChart?: UIChart;
   @ViewChild('lineChart') private lineChart?: UIChart;
@@ -73,7 +72,7 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
         title: {
           display: true,
           text: 'Waypoints',
-          color: CHART_TEXT,
+          color: THEME_NAVY,
         },
         ticks: { color: CHART_TEXT },
         grid: { color: CHART_GRID },
@@ -84,7 +83,7 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
         title: {
           display: true,
           text: 'Fuel remaining (L)',
-          color: CHART_TEXT,
+          color: THEME_NAVY,
         },
         ticks: { color: CHART_TEXT },
         grid: { color: CHART_GRID },
@@ -157,15 +156,22 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
         {
           label: 'Fuel consumption (L)',
           data: this.summaries.map((summary) => summary.totalFuelLiters),
-          backgroundColor: CHART_PRIMARY,
-          borderColor: CHART_PRIMARY_DARK,
+          backgroundColor: this.summaries.map((summary) => getPlanChartColor(summary.planKey)),
+          borderColor: this.summaries.map((summary) => getPlanChartBorderColor(summary.planKey)),
           borderWidth: 1,
-          hoverBackgroundColor: CHART_PRIMARY_LIGHT,
+          hoverBackgroundColor: this.summaries.map((summary) =>
+            getPlanChartBorderColor(summary.planKey)
+          ),
         },
       ],
     };
 
-    this.barChartPlugins = [this.buildBarFuelLabelPlugin(this.barFuelLabels)];
+    this.barChartPlugins = [
+      this.buildBarFuelLabelPlugin(
+        this.barFuelLabels,
+        this.summaries.map((summary) => getPlanChartBorderColor(summary.planKey))
+      ),
+    ];
   }
 
   private rebuildLineChart(planKey: string): void {
@@ -179,17 +185,20 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
     const series = buildPlanFuelEventSeries(plan, this.routeEvents);
     this.lineConsumptionLabels = series.map((point) => String(point.segmentFuelLiters));
 
+    const lineColor = getPlanChartColor(planKey);
+    const lineBorderColor = getPlanChartBorderColor(planKey);
+
     this.lineChartData = {
       labels: series.map((point) => point.label),
       datasets: [
         {
           label: 'Fuel remaining (L)',
           data: series.map((point) => point.fuelRemainingLiters),
-          borderColor: CHART_PRIMARY,
-          backgroundColor: 'rgba(16, 185, 129, 0.12)',
+          borderColor: lineColor,
+          backgroundColor: getPlanChartFillColor(planKey),
           fill: true,
           tension: 0.25,
-          pointBackgroundColor: CHART_PRIMARY_DARK,
+          pointBackgroundColor: lineBorderColor,
           pointBorderColor: '#ffffff',
           pointRadius: 5,
           pointHoverRadius: 7,
@@ -197,7 +206,9 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
       ],
     };
 
-    this.lineChartPlugins = [this.buildConsumptionLabelPlugin(this.lineConsumptionLabels)];
+    this.lineChartPlugins = [
+      this.buildConsumptionLabelPlugin(this.lineConsumptionLabels, lineBorderColor),
+    ];
   }
 
   private scheduleChartRefresh(target: 'bar' | 'line' | 'both' = 'both'): void {
@@ -234,7 +245,7 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
           title: {
             display: true,
             text: 'Fuel consumption (L)',
-            color: CHART_TEXT,
+            color: THEME_NAVY,
           },
           ticks: { color: CHART_TEXT },
           grid: { color: CHART_GRID },
@@ -256,7 +267,7 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
     };
   }
 
-  private buildBarFuelLabelPlugin(labels: string[]) {
+  private buildBarFuelLabelPlugin(labels: string[], colors: string[]) {
     return {
       id: 'barFuelLabels',
       afterDatasetsDraw: (chart: {
@@ -267,7 +278,6 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
 
         chart.ctx.save();
         chart.ctx.font = 'bold 10px sans-serif';
-        chart.ctx.fillStyle = CHART_PRIMARY_DARK;
         chart.ctx.textAlign = 'center';
 
         meta.data.forEach((bar, index) => {
@@ -276,6 +286,7 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
             return;
           }
 
+          chart.ctx.fillStyle = colors[index] ?? THEME_NAVY;
           chart.ctx.fillText(`${value}L`, bar.x, bar.y - 6);
         });
 
@@ -284,7 +295,7 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
     };
   }
 
-  private buildConsumptionLabelPlugin(labels: string[]) {
+  private buildConsumptionLabelPlugin(labels: string[], color: string) {
     return {
       id: 'consumptionPointLabels',
       afterDatasetsDraw: (chart: {
@@ -297,7 +308,7 @@ export class OpDashPanelComponent implements OnChanges, AfterViewInit {
 
         chart.ctx.save();
         chart.ctx.font = 'bold 10px sans-serif';
-        chart.ctx.fillStyle = CHART_PRIMARY_DARK;
+        chart.ctx.fillStyle = color;
         chart.ctx.textAlign = 'center';
 
         meta.data.forEach((point, index) => {

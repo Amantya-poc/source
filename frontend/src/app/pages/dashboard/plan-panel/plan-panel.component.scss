@@ -1,8 +1,7 @@
-$accent: #34d399;
-$accent-dark: #059669;
-$accent-soft: rgba(52, 211, 153, 0.12);
-$accent-border: rgba(52, 211, 153, 0.35);
-$label-color: var(--p-text-muted-color);
+$navy: #1e3a6b;
+$navy-dark: #152a52;
+$navy-light: #2a5088;
+$border-color: #d1d5db;
 
 :host {
   display: block;
@@ -14,12 +13,17 @@ $label-color: var(--p-text-muted-color);
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 100%;
   max-height: calc(100vh - 1.5rem);
   overflow: visible;
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 0.85rem;
-  background: var(--p-surface-0);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  border: 1px solid $border-color;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+
+  &--embedded {
+    max-height: none;
+  }
 }
 
 .plan-panel__header {
@@ -28,7 +32,7 @@ $label-color: var(--p-text-muted-color);
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1.1rem 1.25rem;
-  border-bottom: 1px solid var(--p-content-border-color);
+  border-bottom: 1px solid $border-color;
 }
 
 .plan-panel__title {
@@ -64,39 +68,22 @@ $label-color: var(--p-text-muted-color);
 }
 
 .plan-form {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: visible;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 1.15rem 1.25rem 0.75rem;
-}
-
-.plan-form__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem 1rem;
-
-  &--full {
-    grid-template-columns: 1fr;
-    margin-bottom: 0.85rem;
-  }
+  gap: 1rem;
+  padding: 1.15rem 1.25rem 1.25rem;
 }
 
 .plan-field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
   min-width: 0;
 
   label {
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: $label-color;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #111827;
   }
 
   :host ::ng-deep .p-datepicker,
@@ -105,150 +92,89 @@ $label-color: var(--p-text-muted-color);
   }
 }
 
-.plan-info-box {
-  display: flex;
-  gap: 0.75rem;
-  margin: 0.85rem 0 0.35rem;
-  padding: 0.95rem 1rem;
-  border: 1px solid $accent-border;
-  border-radius: 0.65rem;
-  background: $accent-soft;
-}
-
-.plan-info-box__icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: flex-start;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin-top: 0.05rem;
-  color: $accent-dark;
-
-  i {
-    font-size: 1.1rem;
-  }
-}
-
-.plan-info-box__content {
-  flex: 1;
-  min-width: 0;
-
-  :host ::ng-deep .p-button {
-    margin-top: 0.6rem;
-  }
-}
-
-.plan-info-box__title {
-  margin: 0;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: $accent-dark;
-}
-
-.plan-info-box__text {
-  margin: 0.3rem 0 0;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--p-text-color);
-}
-
-.plan-hint {
-  margin: 0.45rem 0 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: $accent-dark;
-  line-height: 1.3;
-}
-
-.plan-saved {
-  margin: 0.35rem 0 0;
-  font-size: 0.75rem;
-  color: var(--p-text-color);
-  line-height: 1.3;
-}
-
-.plan-limit {
-  margin: 0.35rem 0 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--p-text-muted-color);
-  line-height: 1.3;
-}
-
-.plan-clear-link {
-  align-self: flex-start;
-  margin-top: 0.35rem;
-  padding: 0;
+.plan-divider {
+  margin: 0.15rem 0 0;
   border: none;
-  background: none;
-  color: #ef4444;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-decoration: underline;
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
+  border-top: 1px solid $border-color;
 }
 
 .plan-panel__footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.65rem;
-  padding: 0.9rem 1.25rem 1.1rem;
-  border-top: 1px solid var(--p-content-border-color);
-  background: var(--p-surface-0);
+  padding: 0 1.25rem 1.1rem;
 }
 
 :host ::ng-deep {
   .plan-field .p-inputtext,
   .plan-field .p-datepicker-input {
-    border-radius: 0.55rem;
+    border: 1px solid $border-color;
+    border-radius: 0.5rem;
     font-size: 0.88rem;
+    color: #374151;
+
+    &::placeholder {
+      color: #9ca3af;
+    }
 
     &:focus {
-      border-color: $accent;
-      box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.2);
+      border-color: $navy;
+      box-shadow: 0 0 0 1px rgba(30, 58, 107, 0.15);
     }
   }
 
   .plan-draw-route-btn {
-    border-color: $accent !important;
-    color: $accent-dark !important;
+    width: 100%;
+    justify-content: center;
+    border-color: $navy !important;
+    color: $navy !important;
+    background: #ffffff !important;
+    border-radius: 0.5rem !important;
+    font-weight: 600 !important;
+
+    .p-button-icon {
+      color: $navy !important;
+    }
+
+    &:hover {
+      background: rgba(30, 58, 107, 0.04) !important;
+    }
   }
 
-  .plan-map-route-active {
-    background: $accent !important;
-    border-color: $accent !important;
+  .plan-panel__create-btn {
+    width: 100%;
+    justify-content: center;
+    background: $navy !important;
+    border-color: $navy !important;
     color: #ffffff !important;
+    border-radius: 0.5rem !important;
+    font-weight: 700 !important;
+    padding-block: 0.65rem !important;
+
+    &:not(:disabled):hover {
+      background: $navy-light !important;
+      border-color: $navy-light !important;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+
+  .plan-panel__clear-btn {
+    width: 100%;
+    justify-content: center;
+    border-radius: 0.5rem !important;
+    font-weight: 600 !important;
+    padding-block: 0.55rem !important;
   }
 
   .plan-panel__cancel-btn {
     min-width: 6rem;
   }
-
-  .plan-panel__create-btn {
-    min-width: 8.5rem;
-    background: $accent !important;
-    border-color: $accent !important;
-    color: #ffffff !important;
-
-    &:not(:disabled):hover {
-      background: $accent-dark !important;
-      border-color: $accent-dark !important;
-    }
-  }
 }
 
 @media (max-width: 720px) {
-  .plan-form__grid {
-    grid-template-columns: 1fr;
-  }
-
   .plan-panel__footer {
     flex-direction: column-reverse;
 

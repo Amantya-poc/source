@@ -10,8 +10,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { RadioButtonModule } from 'primeng/radiobutton';
 import { SliderModule } from 'primeng/slider';
+import { TabsModule } from 'primeng/tabs';
 import { ToastModule } from 'primeng/toast';
 import {
   FUEL_CAPACITY_LITERS,
@@ -20,6 +20,7 @@ import {
   RouteWaypoint,
   VehicleSimulationState,
   WaypointAddedEvent,
+  getPlanRouteColor,
 } from '../../models/plan.model';
 import { findRouteIntersections } from '../../utils/route-intersection.util';
 import { PlanApiService, PlanRecord, TimelineSettings } from '../../services/plan-api.service';
@@ -33,12 +34,13 @@ import { OpDashPanelComponent } from './op-dash-panel/op-dash-panel.component';
 import { PlanPanelComponent } from './plan-panel/plan-panel.component';
 
 type PlaybackMode = 'event' | 'time';
-type SidebarPanel = 'plan' | 'deploy' | 'opDash';
+type SidebarTab = 'plan' | 'deploy' | 'analysis' | 'history';
 
 interface AircraftSlotInfo {
   slot: number;
   planKey: string | null;
   planeName: string;
+  color: string;
   speed: number;
   fuelLiters: number;
   progress: number;
@@ -51,8 +53,8 @@ interface AircraftSlotInfo {
     FormsModule,
     ReactiveFormsModule,
     ButtonModule,
-    RadioButtonModule,
     SliderModule,
+    TabsModule,
     ToastModule,
     AerialDeviceMapComponent,
     PlanPanelComponent,
@@ -84,7 +86,9 @@ export class DashboardComponent implements AfterViewInit {
   isPaused = false;
   simulationComplete = false;
   playbackMode: PlaybackMode = 'time';
-  activePanel: SidebarPanel | null = null;
+  activeTab: SidebarTab = 'plan';
+  deployActive = false;
+  timeStep = '1x';
   timelineValue = 0;
   timelineSteps: number[] = [0, 100];
   routeSelectionActive = false;
@@ -144,12 +148,65 @@ export class DashboardComponent implements AfterViewInit {
         slot: index + 1,
         planKey,
         planeName,
+        color: planKey ? getPlanRouteColor(planKey) : '',
         speed: vehicleState?.speed ?? planSpeed,
         fuelLiters: vehicleState?.fuelLiters ?? FUEL_CAPACITY_LITERS,
         progress: vehicleState?.progress ?? 0,
         active: !!plan,
       };
     });
+  }
+
+  get playbackSpeedMultiplier(): number {
+    const match = /^(\d+(?:\.\d+)?)x$/i.exec(this.timeStep);
+    return match ? Math.max(1, Number(match[1])) : 1;
+  }
+
+  get simulationStatus(): string {
+    if (this.isRunning) {
+      return 'RUNNING';
+    }
+    if (this.isPaused) {
+      return 'PAUSED';
+    }
+    return 'STOPPED';
+  }
+
+  get timelineSummary(): string {
+    if (this.savedPlans.length === 0) {
+      return 'No plans defined';
+    }
+
+    const plan = this.savedPlans.at(0) as FormGroup | undefined;
+    if (!plan) {
+      return `${this.savedPlans.length} plan(s)`;
+    }
+
+    const route = this.getPlanRoute(plan);
+    const speed = Number(plan.get('speed')?.value ?? 0);
+    return `${route.length} WP · ${speed} km/h`;
+  }
+
+  get missionElapsed(): string {
+    const start = this.getTimelineStart();
+    const end = this.getTimelineEnd();
+    if (!start || !end) {
+      return 'T+00:00:00';
+    }
+
+    const durationMs = end.getTime() - start.getTime();
+    const elapsedMs = (this.timelineValue / 100) * durationMs;
+    return this.formatMissionTime(elapsedMs);
+  }
+
+  get missionDuration(): string {
+    const start = this.getTimelineStart();
+    const end = this.getTimelineEnd();
+    if (!start || !end) {
+      return '00:00:00';
+    }
+
+    return this.formatMissionTime(end.getTime() - start.getTime()).replace('T+', '');
   }
 
   get mapStartTime(): string {
@@ -169,16 +226,6 @@ export class DashboardComponent implements AfterViewInit {
     return this.datePipe.transform(displayDate, 'medium') ?? '';
   }
 
-  get timelineStartLabel(): string {
-    const start = this.getTimelineStart();
-    return start ? (this.datePipe.transform(start, 'medium') ?? '') : '';
-  }
-
-  get timelineEndLabel(): string {
-    const end = this.getTimelineEnd();
-    return end ? (this.datePipe.transform(end, 'medium') ?? '') : '';
-  }
-
   private getTimelineStart(): Date | null {
     const value = this.timelineSettings?.sliderStartTime;
     return value ? new Date(value) : null;
@@ -189,29 +236,50 @@ export class DashboardComponent implements AfterViewInit {
     return value ? new Date(value) : null;
   }
 
+  private formatMissionTime(ms: number): string {
+    const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `T+${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
   ngAfterViewInit(): void {
     this.loadPlansFromDb();
   }
 
-  onSidebarSelect(panel: SidebarPanel): void {
-    this.activePanel = this.activePanel === panel ? null : panel;
+  onTabChange(tab: string | number | undefined): void {
+    const nextTab = tab as SidebarTab;
+    this.activeTab = nextTab;
 
-    if (this.activePanel !== 'plan') {
+    if (nextTab !== 'plan') {
       this.routeSelectionActive = false;
     }
 
-    if (this.activePanel !== 'deploy') {
+    if (nextTab !== 'deploy') {
+      this.deployActive = false;
       this.aerialDeviceMap?.clearDeploySelection();
     }
   }
 
-  onPlanDialogVisibleChange(visible: boolean): void {
-    if (visible) {
+  onDeployClick(): void {
+    this.deployActive = !this.deployActive;
+
+    if (!this.deployActive) {
+      this.aerialDeviceMap?.clearDeploySelection();
       return;
     }
 
-    this.activePanel = null;
-    this.routeSelectionActive = false;
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Deployment mode',
+      detail: 'Click on the map to place deploy areas.',
+      life: 4000,
+    });
+  }
+
+  formatProgress(progress: number): string {
+    return `${Math.round(progress)}%`;
   }
 
   onStartMapRoute(): void {
@@ -253,7 +321,7 @@ export class DashboardComponent implements AfterViewInit {
         next: (plan) => {
           if (plan.key !== planKey) {
             this.aerialDeviceMap?.removeSavedRoute(planKey);
-            this.aerialDeviceMap?.restoreSavedRoute(plan.key, plan.route, this.savedPlans.length);
+            this.aerialDeviceMap?.restoreSavedRoute(plan.key, plan.route);
           }
 
           this.savedPlans.push(this.createPlanFormGroup(plan));
@@ -391,10 +459,6 @@ export class DashboardComponent implements AfterViewInit {
     });
   }
 
-  formatProgress(progress: number): string {
-    return `${Math.round(progress)}%`;
-  }
-
   onAircraftCardClick(aircraft: AircraftSlotInfo): void {
     if (!aircraft.active || !aircraft.planKey) {
       return;
@@ -486,7 +550,7 @@ export class DashboardComponent implements AfterViewInit {
 
     plans.forEach((plan, index) => {
       this.savedPlans.push(this.createPlanFormGroup(plan));
-      this.aerialDeviceMap?.restoreSavedRoute(plan.key, plan.route, index);
+      this.aerialDeviceMap?.restoreSavedRoute(plan.key, plan.route);
     });
 
     this.syncRouteEvents();

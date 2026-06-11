@@ -13,6 +13,7 @@ import { InputTextModule } from 'primeng/inputtext';
 })
 export class PlanPanelComponent {
   @Input({ required: true }) planForm!: FormGroup;
+  @Input() embedded = false;
   @Input() visible = false;
   @Input() routeSelectionActive = false;
   @Input() draftWaypointCount = 0;

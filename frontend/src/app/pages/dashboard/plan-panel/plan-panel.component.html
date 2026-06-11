@@ -1,107 +1,65 @@
 @if (visible) {
-  <article class="plan-panel">
-    <header class="plan-panel__header">
-      <h2 class="plan-panel__title">Create Plan</h2>
-      <button type="button" class="plan-panel__close" aria-label="Close" (click)="onCancel()">
-        <i class="pi pi-times" aria-hidden="true"></i>
-      </button>
-    </header>
+  <article class="plan-panel" [class.plan-panel--embedded]="embedded">
+    @if (!embedded) {
+      <header class="plan-panel__header">
+        <h2 class="plan-panel__title">Create Plan</h2>
+        <button type="button" class="plan-panel__close" aria-label="Close" (click)="onCancel()">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </header>
+    }
 
     <form [formGroup]="planForm" class="plan-form">
-      <div class="plan-form__grid plan-form__grid--full">
-        <div class="plan-field">
-          <label for="plane-name">Plan Name</label>
-          <input
-            pInputText
-            id="plane-name"
-            formControlName="planeName"
-            placeholder="Enter plan name"
-          />
-        </div>
+      <div class="plan-field">
+        <label for="plane-name">Plan Name</label>
+        <input
+          pInputText
+          id="plane-name"
+          formControlName="planeName"
+          placeholder="e.g. ABC Plan"
+        />
       </div>
 
-      <div class="plan-form__grid">
-        <div class="plan-field">
-          <label for="plane-speed">Speed (km/h)</label>
-          <input
-            pInputText
-            id="plane-speed"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            formControlName="speed"
-            (input)="onSpeedInput($event)"
-            placeholder="Speed"
-          />
-        </div>
-
-        <div class="plan-field">
-          <label for="starting-date">Starting date &amp; time</label>
-          <p-datepicker
-            inputId="starting-date"
-            formControlName="startingDate"
-            dateFormat="dd/mm/yy"
-            [showTime]="true"
-            hourFormat="24"
-            [showIcon]="true"
-            [iconDisplay]="'input'"
-            appendTo="body"
-            panelStyleClass="plan-datepicker-panel"
-            placeholder="Select date & time"
-          />
-        </div>
+      <div class="plan-field">
+        <label for="plane-speed">Speed (Km/Hr)</label>
+        <input
+          pInputText
+          id="plane-speed"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          formControlName="speed"
+          (input)="onSpeedInput($event)"
+          placeholder="e.g. 200"
+        />
       </div>
 
-      <div class="plan-info-box">
-        <span class="plan-info-box__icon" aria-hidden="true">
-          <i class="pi pi-map-marker"></i>
-        </span>
-        <div class="plan-info-box__content">
-          <p class="plan-info-box__title">Draw route on map</p>
-          <p class="plan-info-box__text">
-            Enable map drawing, click on the map to place waypoints for this plan.
-          </p>
-          <p-button
-            type="button"
-            label="Draw route"
-            icon="pi pi-pencil"
-            size="small"
-            [outlined]="!routeSelectionActive"
-            [styleClass]="routeSelectionActive ? 'plan-map-route-active' : 'plan-draw-route-btn'"
-            (onClick)="mapRouteClick.emit()"
-          />
-          @if (routeSelectionActive) {
-            <p class="plan-hint">Waypoints added: {{ draftWaypointCount }}</p>
-          }
-        </div>
+      <div class="plan-field">
+        <label for="starting-date">Start Date &amp; Time</label>
+        <p-datepicker
+          inputId="starting-date"
+          formControlName="startingDate"
+          dateFormat="dd/mm/yy"
+          [showTime]="true"
+          hourFormat="24"
+          [showIcon]="true"
+          [iconDisplay]="'input'"
+          appendTo="body"
+          panelStyleClass="plan-datepicker-panel"
+          placeholder="Select date & time"
+        />
       </div>
 
-      @if (plansCount >= maxPlans) {
-        <p class="plan-limit">Maximum {{ maxPlans }} plans saved.</p>
-      } @else if (savedPlanKeys.length) {
-        <p class="plan-saved">Saved: {{ savedPlanKeys.join(', ') }} ({{ plansCount }}/{{ maxPlans }})</p>
-      }
-
-      @if (plansCount > 0) {
-        <button
-          type="button"
-          class="plan-clear-link"
-          [disabled]="clearAllDisabled"
-          (click)="clearAllRoutesClick.emit()"
-        >
-          Clear all routes
-        </button>
-      }
-    </form>
-
-    <footer class="plan-panel__footer">
       <p-button
         type="button"
-        label="Cancel"
-        severity="secondary"
+        label="Draw Route"
+        icon="pi pi-pencil"
         [outlined]="true"
-        styleClass="plan-panel__cancel-btn"
-        (onClick)="onCancel()"
+        styleClass="plan-draw-route-btn"
+        (onClick)="mapRouteClick.emit()"
       />
+
+      <hr class="plan-divider" />
+
       <p-button
         type="button"
         label="Create Plan"
@@ -109,6 +67,29 @@
         [disabled]="finishDisabled"
         (onClick)="finishClick.emit()"
       />
-    </footer>
+
+      <p-button
+        type="button"
+        label="Clear All Plans"
+        severity="danger"
+        [outlined]="true"
+        styleClass="plan-panel__clear-btn"
+        [disabled]="clearAllDisabled"
+        (onClick)="clearAllRoutesClick.emit()"
+      />
+    </form>
+
+    @if (!embedded) {
+      <footer class="plan-panel__footer">
+        <p-button
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          styleClass="plan-panel__cancel-btn"
+          (onClick)="onCancel()"
+        />
+      </footer>
+    }
   </article>
 }

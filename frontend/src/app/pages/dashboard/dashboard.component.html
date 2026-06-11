@@ -3,114 +3,97 @@
 
   <div class="map-shell">
     <aside class="sidebar">
-      <div class="sidebar-brand">
-        <i class="pi pi-send sidebar-brand__icon" aria-hidden="true"></i>
-        <span class="sidebar-brand__title">Aerial Device Tracking</span>
-      </div>
-
-      <nav class="sidebar-nav" aria-label="Dashboard modes">
-        <button
-          type="button"
-          class="sidebar-nav-btn"
-          [class.sidebar-nav-btn--active]="activePanel === 'plan'"
-          (click)="onSidebarSelect('plan')"
-        >
-          <i class="pi pi-map" aria-hidden="true"></i>
-          <span>Plan</span>
-        </button>
-        <button
-          type="button"
-          class="sidebar-nav-btn"
-          [class.sidebar-nav-btn--active]="activePanel === 'deploy'"
-          (click)="onSidebarSelect('deploy')"
-        >
-          <i class="pi pi-send" aria-hidden="true"></i>
-          <span>Deploy</span>
-        </button>
-        <button
-          type="button"
-          class="sidebar-nav-btn"
-          [class.sidebar-nav-btn--active]="activePanel === 'opDash'"
-          (click)="onSidebarSelect('opDash')"
-        >
-          <i class="pi pi-desktop" aria-hidden="true"></i>
-          <span>O/P Dashboard</span>
-        </button>
-      </nav>
-
-      <section class="tracking-mode" aria-label="Tracking mode">
-        <p class="field-label">Tracking mode</p>
-        <div class="tracking-mode-card">
-          <label class="tracking-mode-option" for="mode-time">
-            <p-radiobutton
-              name="playbackMode"
-              value="time"
-              [(ngModel)]="playbackMode"
-              inputId="mode-time"
-            />
-            <span class="tracking-mode-option__text">
-              <span class="tracking-mode-option__title">Time-Based Tracking</span>
-              <span class="tracking-mode-option__desc">Fixed intervals telemetry refresh</span>
-            </span>
-          </label>
-          <label class="tracking-mode-option" for="mode-event">
-            <p-radiobutton
-              name="playbackMode"
-              value="event"
-              [(ngModel)]="playbackMode"
-              inputId="mode-event"
-            />
-            <span class="tracking-mode-option__text">
-              <span class="tracking-mode-option__title">Event-Based Tracking</span>
-              <span class="tracking-mode-option__desc">Updates only at specific events</span>
-            </span>
-          </label>
+      <header class="sidebar-brand">
+        <div class="sidebar-brand__logo" aria-hidden="true">
+          <i class="pi pi-globe"></i>
         </div>
-      </section>
-
-      <section class="playback-controls" aria-label="Simulation controls">
-        <p class="field-label">Playback</p>
-        <div class="playback-controls-list">
-          <button
-            type="button"
-            class="playback-btn"
-            [disabled]="!canPlaySimulation"
-            (click)="onPlay()"
-          >
-            <i class="pi pi-play" aria-hidden="true"></i>
-            <span>Play</span>
-          </button>
-          <button
-            type="button"
-            class="playback-btn"
-            [disabled]="!canPauseSimulation"
-            (click)="onPause()"
-          >
-            <i class="pi pi-pause" aria-hidden="true"></i>
-            <span>Pause</span>
-          </button>
-          <button
-            type="button"
-            class="playback-btn"
-            [disabled]="!canResumeSimulation"
-            (click)="onResume()"
-          >
-            <i class="pi pi-play-circle" aria-hidden="true"></i>
-            <span>Resume</span>
-          </button>
-          <button
-            type="button"
-            class="playback-btn"
-            [disabled]="!canStopSimulation"
-            (click)="onStop()"
-          >
-            <i class="pi pi-stop" aria-hidden="true"></i>
-            <span>Stop</span>
-          </button>
+        <div class="sidebar-brand__text">
+          <span class="sidebar-brand__eyebrow">Aerial Simulation</span>
+          <span class="sidebar-brand__title">ASP-Console</span>
         </div>
-      </section>
+      </header>
 
-      <div class="aircraft-cards">
+      <p-tabs class="sidebar-tabs" [(value)]="activeTab" (valueChange)="onTabChange($event)">
+        <p-tablist>
+          <p-tab value="plan">
+            <i class="pi pi-map" aria-hidden="true"></i>
+            <span>Planning</span>
+          </p-tab>
+          <p-tab value="deploy">
+            <i class="pi pi-send" aria-hidden="true"></i>
+            <span>Deployment</span>
+          </p-tab>
+          <p-tab value="analysis">
+            <i class="pi pi-chart-bar" aria-hidden="true"></i>
+            <span>Analysis</span>
+          </p-tab>
+          <p-tab value="history">
+            <i class="pi pi-history" aria-hidden="true"></i>
+            <span>History</span>
+          </p-tab>
+        </p-tablist>
+
+        <p-tabpanels>
+          <p-tabpanel value="plan">
+            <div class="sidebar-tab-content">
+              <app-plan-panel
+                [embedded]="true"
+                [visible]="true"
+                [planForm]="planDraftForm"
+                [routeSelectionActive]="routeSelectionActive"
+                [draftWaypointCount]="draftWaypointCount"
+                [savedPlanKeys]="savedPlanKeys"
+                [maxPlans]="maxPlans"
+                [plansCount]="savedPlans.length"
+                [finishDisabled]="isFinishDisabled"
+                [clearAllDisabled]="savedPlans.length === 0"
+                (mapRouteClick)="onStartMapRoute()"
+                (finishClick)="onFinishPlan()"
+                (clearAllRoutesClick)="onClearAllRoutes()"
+              />
+            </div>
+          </p-tabpanel>
+
+          <p-tabpanel value="deploy">
+            <div class="sidebar-tab-content sidebar-tab-content--deploy">
+              <p class="deploy-panel__label">Deployment</p>
+              <p class="deploy-panel__hint">
+                Enable deployment mode to place and manage deploy areas on the map.
+              </p>
+              <p-button
+                type="button"
+                label="Deploy"
+                icon="pi pi-send"
+                styleClass="deploy-panel__btn"
+                [severity]="deployActive ? 'success' : 'primary'"
+                (onClick)="onDeployClick()"
+              />
+              @if (deployActive) {
+                <p class="deploy-panel__status">Deployment mode active — click on the map to place areas.</p>
+              }
+            </div>
+          </p-tabpanel>
+
+          <p-tabpanel value="analysis">
+            <div class="sidebar-tab-content sidebar-tab-content--analysis">
+              <app-op-dash-panel
+                [compact]="true"
+                [plans]="opDashPlans"
+                [routeEvents]="opDashRouteEvents"
+              />
+            </div>
+          </p-tabpanel>
+
+          <p-tabpanel value="history">
+            <div class="sidebar-tab-content sidebar-tab-content--history">
+              <p class="history-panel__label">History</p>
+              <p class="history-panel__empty">No mission history recorded yet.</p>
+            </div>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
+
+      <section class="aircraft-cards" aria-label="Aircraft status">
         <p class="field-label">Aircraft status</p>
         @for (aircraft of aircraftSlots; track aircraft.slot) {
           <article
@@ -126,6 +109,13 @@
             (keydown.space)="$event.preventDefault(); onAircraftCardClick(aircraft)"
           >
             <header class="aircraft-card__header">
+              @if (aircraft.active && aircraft.color) {
+                <span
+                  class="aircraft-card__color"
+                  [style.background-color]="aircraft.color"
+                  aria-hidden="true"
+                ></span>
+              }
               <span class="aircraft-card__name">{{ aircraft.planeName }}</span>
             </header>
 
@@ -154,10 +144,7 @@
                   aria-valuemax="100"
                   [attr.aria-label]="'Route completed ' + formatProgress(aircraft.progress)"
                 >
-                  <div
-                    class="aircraft-progress-bar__fill"
-                    [style.width.%]="aircraft.progress"
-                  ></div>
+                  <div class="aircraft-progress-bar__fill" [style.width.%]="aircraft.progress"></div>
                 </div>
               </div>
             } @else {
@@ -165,14 +152,15 @@
             }
           </article>
         }
-      </div>
+      </section>
     </aside>
 
     <div class="map-area">
       <app-aerial-device-map
-        [routeSelectionEnabled]="routeSelectionActive && activePanel === 'plan' && savedPlans.length < maxPlans"
-        [deployEditingEnabled]="activePanel === 'deploy'"
+        [routeSelectionEnabled]="routeSelectionActive && activeTab === 'plan' && savedPlans.length < maxPlans"
+        [deployEditingEnabled]="activeTab === 'deploy' && deployActive"
         [playbackMode]="playbackMode"
+        [playbackSpeed]="playbackSpeedMultiplier"
         [highlightedPlanKey]="selectedPlanKey"
         (waypointAdded)="onWaypointAdded($event)"
         (simulationStateChange)="onSimulationStateChange($event)"
@@ -180,71 +168,131 @@
         (simulationFinished)="onSimulationFinished()"
       />
 
-      <div class="map-time-header">
-        @if (mapStartTime) {
-          <div class="map-plan-start">
-            <span class="map-time-label">Start time:</span>
-            <span class="map-time-value">{{ mapStartTime }}</span>
-          </div>
-        }
-        @if (currentTime) {
-          <div class="map-current-time">
-            <span class="map-time-label">Current time:</span>
-            <span class="map-time-value">{{ currentTime }}</span>
-          </div>
-        }
-      </div>
-
-    @if (activePanel === 'plan') {
-      <div class="map-overlay map-overlay--plan">
-        <app-plan-panel
-          [visible]="true"
-          [planForm]="planDraftForm"
-          [routeSelectionActive]="routeSelectionActive"
-          [draftWaypointCount]="draftWaypointCount"
-          [savedPlanKeys]="savedPlanKeys"
-          [maxPlans]="maxPlans"
-          [plansCount]="savedPlans.length"
-          [finishDisabled]="isFinishDisabled"
-          [clearAllDisabled]="savedPlans.length === 0"
-          (visibleChange)="onPlanDialogVisibleChange($event)"
-          (mapRouteClick)="onStartMapRoute()"
-          (finishClick)="onFinishPlan()"
-          (clearAllRoutesClick)="onClearAllRoutes()"
-        />
-      </div>
-    }
-
-    @if (activePanel === 'opDash') {
-      <div class="map-overlay map-overlay--op-dash" aria-label="Output dashboard">
-        <app-op-dash-panel
-          [plans]="opDashPlans"
-          [routeEvents]="opDashRouteEvents"
-        />
-      </div>
-    }
-
-    <div class="map-toolbar map-toolbar--bottom">
-      <div class="timeline-track">
-        <div class="timeline-slider-wrap">
-          <p-slider
-            [(ngModel)]="timelineValue"
-            [min]="0"
-            [max]="100"
-            [step]="1"
-            [disabled]="!isTimelineInteractive"
-            class="timeline-slider"
-            (ngModelChange)="onTimelineChange($event)"
-          />
+      <div class="map-control-bar" aria-label="Simulation controls">
+        <div class="control-group control-group--playback">
+          <button
+            type="button"
+            class="control-btn control-btn--primary"
+            title="Play"
+            [disabled]="!canPlaySimulation"
+            (click)="onPlay()"
+          >
+            <i class="pi pi-play" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="control-btn"
+            title="Pause"
+            [disabled]="!canPauseSimulation"
+            (click)="onPause()"
+          >
+            <i class="pi pi-pause" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="control-btn"
+            title="Resume"
+            [disabled]="!canResumeSimulation"
+            (click)="onResume()"
+          >
+            <i class="pi pi-forward" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="control-btn control-btn--stop"
+            title="Stop"
+            [disabled]="!canStopSimulation"
+            (click)="onStop()"
+          >
+            <i class="pi pi-stop" aria-hidden="true"></i>
+          </button>
         </div>
-        @if (timelineStartLabel || timelineEndLabel) {
-          <div class="timeline-labels">
-            <span class="timeline-bound timeline-bound--start">{{ timelineStartLabel }}</span>
-            <span class="timeline-bound timeline-bound--end">{{ timelineEndLabel }}</span>
+
+        <div class="control-divider" aria-hidden="true"></div>
+
+        <div class="control-divider" aria-hidden="true"></div>
+
+        <div class="control-group control-group--mode">
+          <span class="control-label">Mode</span>
+          <div class="mode-toggle">
+            <button
+              type="button"
+              class="mode-btn"
+              [class.mode-btn--active]="playbackMode === 'time'"
+              (click)="playbackMode = 'time'"
+            >
+              Time
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              [class.mode-btn--active]="playbackMode === 'event'"
+              (click)="playbackMode = 'event'"
+            >
+              Event
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group control-group--timestep">
+          <label class="control-label" for="timestep-select">Δt</label>
+          <select id="timestep-select" class="control-select" [(ngModel)]="timeStep">
+            <option value="1x">1x</option>
+            <option value="2x">2x</option>
+            <option value="5x">5x</option>
+            <option value="10x">10x</option>
+          </select>
+        </div>
+
+        @if (mapStartTime || currentTime) {
+          <div class="control-times">
+            @if (mapStartTime) {
+              <div class="time-card">
+                <span class="time-card__label">Start time</span>
+                <span class="time-card__value">{{ mapStartTime }}</span>
+              </div>
+            }
+            @if (currentTime) {
+              <div class="time-card time-card--current">
+                <span class="time-card__label">Current time</span>
+                <span class="time-card__value">{{ currentTime }}</span>
+              </div>
+            }
           </div>
         }
+
+        <div class="control-group control-group--status">
+          <i class="pi pi-wifi status-icon" aria-hidden="true"></i>
+          <span class="status-text" [class.status-text--running]="isRunning" [class.status-text--paused]="isPaused">
+            {{ simulationStatus }}
+          </span>
+        </div>
       </div>
-    </div>
+
+      <footer class="timeline-bar" aria-label="Mission timeline">
+        <div class="timeline-bar__left">
+          <span class="timeline-bar__title">Timeline</span>
+          <span class="timeline-bar__summary">{{ timelineSummary }}</span>
+        </div>
+
+        <div class="timeline-bar__track">
+          <div class="timeline-slider-wrap">
+            <p-slider
+              [(ngModel)]="timelineValue"
+              [min]="0"
+              [max]="100"
+              [step]="1"
+              [disabled]="!isTimelineInteractive"
+              class="timeline-slider"
+              (ngModelChange)="onTimelineChange($event)"
+            />
+          </div>
+        </div>
+
+        <div class="timeline-bar__right">
+          <span class="timeline-bar__clock">{{ missionElapsed }} / {{ missionDuration }}</span>
+        </div>
+      </footer>
     </div>
   </div>
 </section>

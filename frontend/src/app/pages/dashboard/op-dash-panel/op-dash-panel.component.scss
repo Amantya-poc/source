@@ -13,6 +13,14 @@
   background: var(--p-surface-0);
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
   overflow: visible;
+
+  &--compact {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
 }
 
 .op-dash-panel__title {
@@ -76,6 +84,18 @@
 .op-dash-card__chart--line {
   height: 12rem;
   min-height: 12rem;
+}
+
+.op-dash-panel--compact {
+  .op-dash-card__chart {
+    height: 7rem;
+    min-height: 7rem;
+  }
+
+  .op-dash-card__chart--line {
+    height: 8rem;
+    min-height: 8rem;
+  }
 }
 
 :host ::ng-deep .op-dash-card__chart .p-chart {

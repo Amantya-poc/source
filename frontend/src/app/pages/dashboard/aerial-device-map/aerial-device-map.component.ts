@@ -41,6 +41,7 @@ import {
   RouteWaypoint,
   VehicleSimulationState,
   WaypointAddedEvent,
+  getPlanRouteColor,
 } from '../../../models/plan.model';
 import {
   cloneDeployVertices,
@@ -87,7 +88,6 @@ interface DeployPointerPayload {
   pixel: number[];
 }
 
-const PLAN_ROUTE_COLORS = ['#10b981', '#059669', '#34d399'];
 const AIRCRAFT_ICON_SRC = '/assets/aircraft.png';
 const AIRCRAFT_ICON_SIZE = 40;
 const DRAFT_ROUTE_COLOR = '#6ee7b7';
@@ -95,6 +95,11 @@ const MIN_ELLIPSE_RADIUS_M = 80;
 const DEFAULT_DEPLOY_RADIUS_X_M = 150_000;
 const DEFAULT_DEPLOY_RADIUS_Y_M = 80_000;
 const RESHAPE_VERTEX_COUNT = 8;
+const DEPLOY_AREA_STROKE = '#2563eb';
+const DEPLOY_AREA_STROKE_SELECTED = '#1d4ed8';
+const DEPLOY_AREA_FILL = 'rgba(37, 99, 235, 0.22)';
+const DEPLOY_AREA_FILL_DRAFT = 'rgba(37, 99, 235, 0.12)';
+const DEPLOY_HANDLE_STROKE = '#2563eb';
 
 @Component({
   selector: 'app-aerial-device-map',
@@ -110,6 +115,7 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
   @Input() routeSelectionEnabled = false;
   @Input() deployEditingEnabled = false;
   @Input() playbackMode: 'event' | 'time' = 'event';
+  @Input() playbackSpeed = 1;
   @Input() highlightedPlanKey: string | null = null;
   @Output() waypointAdded = new EventEmitter<WaypointAddedEvent>();
   @Output() simulationStateChange = new EventEmitter<VehicleSimulationState[]>();
@@ -179,7 +185,7 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
     const route = this.draftWaypoints.map((coordinate) => toLonLat(coordinate) as [number, number]);
 
     if (route.length > 0) {
-      const color = PLAN_ROUTE_COLORS[this.savedRoutes.size % PLAN_ROUTE_COLORS.length];
+      const color = getPlanRouteColor(planKey);
       this.savedRoutes.set(planKey, {
         waypoints: [...this.draftWaypoints],
         color,
@@ -192,13 +198,13 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
     return route;
   }
 
-  restoreSavedRoute(planKey: string, route: RouteWaypoint[], colorIndex: number): void {
+  restoreSavedRoute(planKey: string, route: RouteWaypoint[]): void {
     if (route.length === 0) {
       return;
     }
 
     const waypoints = route.map((point) => fromLonLat([point.longitude, point.latitude]));
-    const color = PLAN_ROUTE_COLORS[colorIndex % PLAN_ROUTE_COLORS.length];
+    const color = getPlanRouteColor(planKey);
     this.savedRoutes.set(planKey, { waypoints, color });
     this.rebuildAllFeatures();
     this.cdr.markForCheck();
@@ -550,7 +556,7 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
     const now = performance.now();
     const deltaMs = now - (this.lastFrameTime ?? now);
     this.lastFrameTime = now;
-    this.simulationElapsedMs += deltaMs;
+    this.simulationElapsedMs += deltaMs * Math.max(1, this.playbackSpeed);
 
     if (this.playbackMode === 'event') {
       this.animateEventBased();
@@ -1314,14 +1320,14 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
 
     if (kind === 'route') {
       const strokeColor = isDimmed ? this.withAlpha(color, 0.28) : color;
-      const width = isHighlighted ? 6 : isDimmed ? 2 : 3;
+      const width = isHighlighted ? 8 : isDimmed ? 4 : 6;
 
       if (isHighlighted) {
         return [
           new Style({
             stroke: new Stroke({
               color: 'rgba(255, 255, 255, 0.85)',
-              width: 10,
+              width: 12,
             }),
           }),
           new Style({
@@ -1398,7 +1404,7 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
         image: new Circle({
           radius: 8,
           fill: new Fill({ color: '#ffffff' }),
-          stroke: new Stroke({ color: '#10b981', width: 3 }),
+          stroke: new Stroke({ color: DEPLOY_HANDLE_STROKE, width: 3 }),
         }),
         zIndex: 3,
       });
@@ -1409,10 +1415,10 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
 
     return new Style({
       fill: new Fill({
-        color: isDraft ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.22)',
+        color: isDraft ? DEPLOY_AREA_FILL_DRAFT : DEPLOY_AREA_FILL,
       }),
       stroke: new Stroke({
-        color: isSelected ? '#059669' : '#10b981',
+        color: isSelected ? DEPLOY_AREA_STROKE_SELECTED : DEPLOY_AREA_STROKE,
         width: isSelected ? 3 : 2,
         lineDash: isDraft ? [8, 8] : undefined,
       }),
@@ -1438,13 +1444,16 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
 
   private withAlpha(hex: string, alpha: number): string {
     const normalized = hex.replace('#', '');
-    if (normalized.length !== 6) {
+    const rgb =
+      normalized.length === 8 ? normalized.slice(0, 6) : normalized.length === 6 ? normalized : null;
+
+    if (!rgb) {
       return hex;
     }
 
-    const red = Number.parseInt(normalized.slice(0, 2), 16);
-    const green = Number.parseInt(normalized.slice(2, 4), 16);
-    const blue = Number.parseInt(normalized.slice(4, 6), 16);
+    const red = Number.parseInt(rgb.slice(0, 2), 16);
+    const green = Number.parseInt(rgb.slice(2, 4), 16);
+    const blue = Number.parseInt(rgb.slice(4, 6), 16);
     return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
   }
 
