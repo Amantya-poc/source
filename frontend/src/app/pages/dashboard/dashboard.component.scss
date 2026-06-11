@@ -371,10 +371,13 @@ $accent: #3b82f6;
   justify-content: center;
   gap: 0.3rem;
   padding: 0.5rem 0.85rem;
-  min-width: 10.5rem;
+  width: 12.5rem;
+  min-width: 12.5rem;
+  min-height: 3.25rem;
   border: 1px solid var(--p-content-border-color);
   border-radius: 0.5rem;
   background: var(--p-surface-50);
+  box-sizing: border-box;
 
   &--current {
     border-color: rgba(30, 58, 107, 0.28);
@@ -392,11 +395,19 @@ $accent: #3b82f6;
 }
 
 .time-card__value {
+  display: block;
+  min-height: 1.2rem;
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--p-text-color);
   line-height: 1.35;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--empty {
+    color: var(--p-text-muted-color);
+  }
 }
 
 .control-divider {

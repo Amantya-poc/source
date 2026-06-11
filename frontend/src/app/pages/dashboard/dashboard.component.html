@@ -244,22 +244,20 @@
           </select>
         </div>
 
-        @if (mapStartTime || currentTime) {
-          <div class="control-times">
-            @if (mapStartTime) {
-              <div class="time-card">
-                <span class="time-card__label">Start time</span>
-                <span class="time-card__value">{{ mapStartTime }}</span>
-              </div>
-            }
-            @if (currentTime) {
-              <div class="time-card time-card--current">
-                <span class="time-card__label">Current time</span>
-                <span class="time-card__value">{{ currentTime }}</span>
-              </div>
-            }
+        <div class="control-times">
+          <div class="time-card">
+            <span class="time-card__label">Start time</span>
+            <span class="time-card__value" [class.time-card__value--empty]="!mapStartTime">
+              {{ mapStartTime || '—' }}
+            </span>
           </div>
-        }
+          <div class="time-card time-card--current">
+            <span class="time-card__label">Current time</span>
+            <span class="time-card__value" [class.time-card__value--empty]="!currentTime">
+              {{ currentTime || '—' }}
+            </span>
+          </div>
+        </div>
 
         <div class="control-group control-group--status">
           <i class="pi pi-wifi status-icon" aria-hidden="true"></i>
