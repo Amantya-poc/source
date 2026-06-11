@@ -1,0 +1,77 @@
+:host {
+  position: absolute;
+  top: 11.25rem;
+  right: 0.75rem;
+  z-index: 5;
+  width: 4.5rem;
+  pointer-events: auto;
+}
+
+.deploy-area-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem 0.55rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius-md);
+  background: var(--p-surface-0);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.deploy-area-card__header {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.deploy-area-card__title {
+  margin: 0;
+  flex: 1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--p-text-color);
+  line-height: 1.2;
+}
+
+.deploy-area-card__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--p-text-muted-color);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: var(--p-surface-100);
+    color: var(--p-text-color);
+  }
+}
+
+.deploy-area-card__hint {
+  margin: 0;
+  font-size: 0.65rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--p-text-muted-color);
+}
+
+.deploy-area-card__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+:host ::ng-deep .deploy-area-card__actions .p-button {
+  width: 2.15rem;
+  height: 2.15rem;
+}

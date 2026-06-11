@@ -1,0 +1,118 @@
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.map-controls {
+  position: absolute;
+  top: 3.85rem;
+  right: 0.75rem;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+:host ::ng-deep .map-controls .ol-control {
+  position: static !important;
+  inset: unset !important;
+  top: unset !important;
+  right: unset !important;
+  bottom: unset !important;
+  left: unset !important;
+  margin: 0;
+  pointer-events: auto;
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-content-border-color);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+:host ::ng-deep .map-controls .ol-zoom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.2rem;
+}
+
+:host ::ng-deep .map-controls .ol-zoom .ol-zoom-in,
+:host ::ng-deep .map-controls .ol-zoom .ol-zoom-out {
+  position: static;
+  margin: 0;
+}
+
+:host ::ng-deep .map-controls .ol-control button {
+  width: 2rem;
+  height: 2rem;
+  line-height: 1;
+  font-size: 1.1rem;
+  color: #34d399;
+  background: var(--p-surface-0);
+  border-radius: var(--p-border-radius-sm);
+}
+
+:host ::ng-deep .map-controls .ol-control button:hover,
+:host ::ng-deep .map-controls .ol-control button:focus {
+  color: #34d399;
+  outline: none;
+  background: var(--p-surface-50);
+}
+
+:host ::ng-deep .map-controls .ol-scale-line {
+  position: static !important;
+  inset: unset !important;
+  padding: 0.25rem 0.4rem;
+  background: var(--p-surface-0);
+}
+
+:host ::ng-deep .map-controls .ol-scale-line-inner {
+  border-color: #34d399;
+  color: var(--p-text-muted-color);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.map-label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius-md);
+  background: var(--p-surface-0);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+  pointer-events: none;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+:host ::ng-deep .map-container .ol-viewport {
+  cursor: default;
+}
+
+:host ::ng-deep .map-container.deploy-editing .ol-viewport {
+  cursor: crosshair;
+}
+
+:host ::ng-deep .map-container.deploy-editing.deploy-action-active .ol-viewport {
+  cursor: grab;
+}
+
+:host ::ng-deep .map-container.deploy-reshape-active .ol-viewport {
+  cursor: default;
+}
+
+:host ::ng-deep .map-container.deploy-reshape-active.deploy-dragging .ol-viewport {
+  cursor: grabbing;
+}

@@ -1,0 +1,40 @@
+<aside class="op-dash-panel">
+  <h2 class="op-dash-panel__title">O/P dash</h2>
+
+  @if (plans.length === 0) {
+    <p class="op-dash-panel__empty">Save plans first to view fuel charts.</p>
+  } @else {
+    <div class="op-dash-charts" (mouseleave)="onBarMouseLeave()">
+      @if (selectedPlanKey && lineChartData) {
+        <section class="op-dash-card op-dash-card--line">
+          <h3 class="op-dash-card__title">{{ selectedPlanName }} — fuel remaining by waypoint</h3>
+          <div class="op-dash-card__chart op-dash-card__chart--line">
+            <p-chart
+              #lineChart
+              type="line"
+              [data]="lineChartData"
+              [options]="lineChartOptions"
+              [plugins]="lineChartPlugins"
+            />
+          </div>
+        </section>
+      }
+
+      <section class="op-dash-card op-dash-card--bar">
+        <h3 class="op-dash-card__title">Plan fuel overview</h3>
+        <p class="op-dash-card__hint">Hover a bar to view event fuel breakdown</p>
+        <div class="op-dash-card__chart">
+          @if (barChartData) {
+            <p-chart
+              #barChart
+              type="bar"
+              [data]="barChartData"
+              [options]="barChartOptions"
+              [plugins]="barChartPlugins"
+            />
+          }
+        </div>
+      </section>
+    </div>
+  }
+</aside>

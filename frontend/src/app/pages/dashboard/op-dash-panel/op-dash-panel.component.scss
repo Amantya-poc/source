@@ -1,0 +1,89 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.op-dash-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius-md);
+  background: var(--p-surface-0);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
+  overflow: visible;
+}
+
+.op-dash-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.op-dash-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: visible;
+}
+
+.op-dash-panel__empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--p-text-muted-color);
+  line-height: 1.4;
+}
+
+.op-dash-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.65rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius-md);
+  background: var(--p-surface-50);
+}
+
+.op-dash-card--line {
+  flex: 0 0 auto;
+}
+
+.op-dash-card--bar {
+  flex: 0 0 auto;
+}
+
+.op-dash-card__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.op-dash-card__hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--p-text-muted-color);
+}
+
+.op-dash-card__chart {
+  position: relative;
+  height: 10rem;
+  min-height: 10rem;
+}
+
+.op-dash-card__chart--line {
+  height: 12rem;
+  min-height: 12rem;
+}
+
+:host ::ng-deep .op-dash-card__chart .p-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+:host ::ng-deep .op-dash-card__chart canvas {
+  cursor: pointer;
+}

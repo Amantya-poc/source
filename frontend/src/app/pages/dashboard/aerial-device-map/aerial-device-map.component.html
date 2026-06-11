@@ -1,0 +1,20 @@
+<div class="map-wrapper">
+  @if (deployEditingEnabled) {
+    <div class="map-label map-label--left">{{ deployMapHint }}</div>
+  }
+
+  <div #mapControls class="map-controls" aria-label="Map zoom and scale"></div>
+
+  <div #mapTarget class="map-container" role="application" aria-label="Aerial device tracking map"></div>
+
+  @if (deployCardVisible) {
+    <app-deploy-area-card
+      [activeAction]="activeDeployAction"
+      (deleteArea)="onDeployDelete()"
+      (moveArea)="onDeployMove()"
+      (resizeArea)="onDeployResize()"
+      (reshapeArea)="onDeployReshape()"
+      (closeArea)="onDeployClose()"
+    />
+  }
+</div>
