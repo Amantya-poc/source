@@ -87,6 +87,7 @@ export class DashboardComponent implements AfterViewInit {
   simulationComplete = false;
   playbackMode: PlaybackMode = 'time';
   activeTab: SidebarTab = 'plan';
+  sidebarMinimized = false;
   deployActive = false;
   timeStep = '1x';
   timelineValue = 0;
@@ -260,6 +261,15 @@ export class DashboardComponent implements AfterViewInit {
       this.deployActive = false;
       this.aerialDeviceMap?.clearDeploySelection();
     }
+  }
+
+  toggleSidebar(): void {
+    this.sidebarMinimized = !this.sidebarMinimized;
+  }
+
+  onRailTabClick(tab: SidebarTab): void {
+    this.onTabChange(tab);
+    this.sidebarMinimized = false;
   }
 
   onDeployClick(): void {
