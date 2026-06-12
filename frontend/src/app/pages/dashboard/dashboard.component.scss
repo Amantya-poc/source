@@ -592,18 +592,20 @@ $accent: #3b82f6;
 .mode-toggle {
   display: inline-flex;
   border: 1px solid var(--p-content-border-color);
-  border-radius: 0.35rem;
+  border-radius: 0.45rem;
   overflow: hidden;
 }
 
 .mode-btn {
-  padding: 0.25rem 0.5rem;
+  min-width: 3.25rem;
+  min-height: 2rem;
+  padding: 0.4rem 0.75rem;
   border: none;
   background: var(--p-surface-0);
   color: var(--p-text-color);
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
   line-height: 1.2;
