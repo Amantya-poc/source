@@ -178,36 +178,17 @@ export class DashboardComponent implements AfterViewInit {
       return 'No plans defined';
     }
 
-    const plan = this.savedPlans.at(0) as FormGroup | undefined;
-    if (!plan) {
-      return `${this.savedPlans.length} plan(s)`;
-    }
+    const maxWaypoints = Math.max(
+      0,
+      ...this.savedPlans.controls.map((plan) => this.getPlanRoute(plan).length)
+    );
 
-    const route = this.getPlanRoute(plan);
-    const speed = Number(plan.get('speed')?.value ?? 0);
-    return `${route.length} WP · ${speed} km/h`;
+    return `${maxWaypoints} WP`;
   }
 
-  get missionElapsed(): string {
-    const start = this.getTimelineStart();
+  get timelineEndTime(): string {
     const end = this.getTimelineEnd();
-    if (!start || !end) {
-      return 'T+00:00:00';
-    }
-
-    const durationMs = end.getTime() - start.getTime();
-    const elapsedMs = (this.timelineValue / 100) * durationMs;
-    return this.formatMissionTime(elapsedMs);
-  }
-
-  get missionDuration(): string {
-    const start = this.getTimelineStart();
-    const end = this.getTimelineEnd();
-    if (!start || !end) {
-      return '00:00:00';
-    }
-
-    return this.formatMissionTime(end.getTime() - start.getTime()).replace('T+', '');
+    return end ? (this.datePipe.transform(end, 'medium') ?? '') : '';
   }
 
   get mapStartTime(): string {
@@ -235,14 +216,6 @@ export class DashboardComponent implements AfterViewInit {
   private getTimelineEnd(): Date | null {
     const value = this.timelineSettings?.sliderEndTime;
     return value ? new Date(value) : null;
-  }
-
-  private formatMissionTime(ms: number): string {
-    const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return `T+${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
   ngAfterViewInit(): void {
@@ -342,6 +315,7 @@ export class DashboardComponent implements AfterViewInit {
             speed: plan.speed,
             route: plan.route,
             travelDurationMs: plan.travelDurationMs,
+            startingDate: plan.startingDate,
           });
 
           this.simulationComplete = false;
@@ -551,7 +525,48 @@ export class DashboardComponent implements AfterViewInit {
 
   private applyTimelineSettings(timeline: TimelineSettings | null | undefined): void {
     this.timelineSettings =
-      timeline?.sliderStartTime || timeline?.sliderEndTime ? timeline : null;
+      timeline?.sliderStartTime || timeline?.sliderEndTime
+        ? timeline
+        : this.computeTimelineFromPlans();
+    this.aerialDeviceMap?.setTimelineBounds(
+      this.timelineSettings?.sliderStartTime ?? null,
+      this.timelineSettings?.sliderEndTime ?? null
+    );
+    this.refreshTimelineSteps();
+  }
+
+  private computeTimelineFromPlans(): TimelineSettings | null {
+    if (this.savedPlans.length === 0) {
+      return null;
+    }
+
+    let minStart: Date | null = null;
+    let maxEnd: Date | null = null;
+
+    for (const plan of this.savedPlans.controls) {
+      const start = plan.get('startingDate')?.value as Date | null;
+      const durationMs = Number(plan.get('travelDurationMs')?.value ?? 0);
+      if (!start || durationMs <= 0) {
+        continue;
+      }
+
+      const end = new Date(start.getTime() + durationMs);
+      if (!minStart || start < minStart) {
+        minStart = start;
+      }
+      if (!maxEnd || end > maxEnd) {
+        maxEnd = end;
+      }
+    }
+
+    if (!minStart || !maxEnd) {
+      return null;
+    }
+
+    return {
+      sliderStartTime: minStart.toISOString(),
+      sliderEndTime: maxEnd.toISOString(),
+    };
   }
 
   private applyPlansFromApi(plans: PlanRecord[]): void {
@@ -588,6 +603,7 @@ export class DashboardComponent implements AfterViewInit {
         speed: Number(plan.get('speed')?.value),
         route,
         travelDurationMs: Number(plan.get('travelDurationMs')?.value ?? 0),
+        startingDate: plan.get('startingDate')?.value as Date,
       });
     });
 
@@ -652,14 +668,23 @@ export class DashboardComponent implements AfterViewInit {
       return;
     }
 
-    const maxProgress = Math.max(...states.map((state) => state.progress)) / 100;
-    let nextValue: number;
+    const start = this.getTimelineStart();
+    const end = this.getTimelineEnd();
+    if (!start || !end) {
+      return;
+    }
+
+    const durationMs = end.getTime() - start.getTime();
+    if (durationMs <= 0) {
+      return;
+    }
+
+    let nextValue = Math.round((this.simulationElapsedMs / durationMs) * 100);
+    nextValue = Math.min(100, Math.max(0, nextValue));
 
     if (this.playbackMode === 'event') {
       const eventProgresses = this.timelineSteps.map((step) => step / 100);
-      nextValue = Math.round(snapToPreviousEventProgress(maxProgress, eventProgresses) * 100);
-    } else {
-      nextValue = Math.round(maxProgress * 100);
+      nextValue = Math.round(snapToPreviousEventProgress(nextValue / 100, eventProgresses) * 100);
     }
 
     if (nextValue === this.timelineValue) {

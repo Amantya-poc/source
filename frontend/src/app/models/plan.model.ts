@@ -55,6 +55,7 @@ export interface PlanSimulationConfig {
   speed: number;
   route: RouteWaypoint[];
   travelDurationMs: number;
+  startingDate: string | Date;
 }
 
 export interface VehicleSimulationState {

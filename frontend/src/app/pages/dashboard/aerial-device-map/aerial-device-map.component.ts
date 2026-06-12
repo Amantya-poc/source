@@ -52,7 +52,6 @@ import {
 import { fuelRemainingForDistance } from '../../../utils/plan-fuel.util';
 import {
   computeEventProgresses,
-  mergeEventProgressSteps,
   progressFromElapsed,
   snapToNearestEventProgress,
   snapToPreviousEventProgress,
@@ -69,6 +68,8 @@ interface VehicleRuntime {
   planKey: string;
   speedKmh: number;
   travelDurationMs: number;
+  startingDate: Date;
+  startOffsetMs: number;
   line: LineString;
   progress: number;
   fuelLiters: number;
@@ -173,6 +174,8 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
   private lastFrameTime?: number;
   private simulationRunning = false;
   private simulationElapsedMs = 0;
+  private timelineStartMs: number | null = null;
+  private timelineDurationMs = 0;
 
   private readonly deployAreaApi = inject(DeployAreaApiService);
 
@@ -240,6 +243,21 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
     }
 
     this.refreshVehicleEventProgresses();
+  }
+
+  setTimelineBounds(sliderStartTime: string | null, sliderEndTime: string | null): void {
+    if (!sliderStartTime || !sliderEndTime) {
+      this.timelineStartMs = null;
+      this.timelineDurationMs = 0;
+      this.refreshVehicleStartOffsets();
+      return;
+    }
+
+    const startMs = new Date(sliderStartTime).getTime();
+    const endMs = new Date(sliderEndTime).getTime();
+    this.timelineStartMs = startMs;
+    this.timelineDurationMs = Math.max(0, endMs - startMs);
+    this.refreshVehicleStartOffsets();
   }
 
   clearDeploySelection(): void {
@@ -343,6 +361,8 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
       planKey: plan.planKey,
       speedKmh,
       travelDurationMs: Math.max(1, plan.travelDurationMs),
+      startingDate: new Date(plan.startingDate),
+      startOffsetMs: this.computeStartOffsetMs(plan.startingDate),
       line,
       progress: 0,
       fuelLiters: FUEL_CAPACITY_LITERS,
@@ -414,9 +434,22 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
   }
 
   getTimelineEventSteps(): number[] {
-    return mergeEventProgressSteps(this.vehicles.map((vehicle) => vehicle.eventProgresses)).map(
-      (progress) => Math.round(progress * 100)
-    );
+    const totalDurationMs = this.getTimelineDurationMs();
+    if (totalDurationMs <= 0) {
+      return [0, 100];
+    }
+
+    const steps = new Set<number>([0, 100]);
+
+    for (const vehicle of this.vehicles) {
+      for (const routeProgress of vehicle.eventProgresses) {
+        const absoluteProgress =
+          (vehicle.startOffsetMs + routeProgress * vehicle.travelDurationMs) / totalDurationMs;
+        steps.add(Math.round(Math.min(1, Math.max(0, absoluteProgress)) * 100));
+      }
+    }
+
+    return [...steps].sort((left, right) => left - right);
   }
 
   setTimelineProgress(sliderValue: number, mode: 'time' | 'event'): void {
@@ -427,27 +460,22 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
     let targetProgress = Math.min(1, Math.max(0, sliderValue / 100));
 
     if (mode === 'event') {
-      const eventProgresses = mergeEventProgressSteps(
-        this.vehicles.map((vehicle) => vehicle.eventProgresses)
-      );
+      const eventProgresses = this.getTimelineEventSteps().map((step) => step / 100);
       targetProgress = snapToNearestEventProgress(targetProgress, eventProgresses);
     }
 
     this.simulationElapsedMs = this.elapsedMsForProgress(targetProgress);
 
     for (const vehicle of this.vehicles) {
-      const elapsedTarget = progressFromElapsed(
+      const vehicleProgress = this.vehicleProgressAtTimelineMs(
+        vehicle,
         this.simulationElapsedMs,
-        vehicle.travelDurationMs
-      );
-      const vehicleProgress =
         mode === 'event'
-          ? snapToPreviousEventProgress(elapsedTarget, vehicle.eventProgresses)
-          : elapsedTarget;
+      );
 
       vehicle.progress = vehicleProgress;
       this.syncVehicleToProgress(vehicle);
-      vehicle.finished = vehicleProgress >= 1 - 1e-9 || vehicle.fuelLiters <= 0;
+      vehicle.finished = this.isVehicleFinished(vehicle, this.simulationElapsedMs);
     }
 
     this.vehicleSource.changed();
@@ -557,6 +585,10 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
     const deltaMs = now - (this.lastFrameTime ?? now);
     this.lastFrameTime = now;
     this.simulationElapsedMs += deltaMs * Math.max(1, this.playbackSpeed);
+    const timelineDurationMs = this.getTimelineDurationMs();
+    if (timelineDurationMs > 0) {
+      this.simulationElapsedMs = Math.min(this.simulationElapsedMs, timelineDurationMs);
+    }
 
     if (this.playbackMode === 'event') {
       this.animateEventBased();
@@ -567,7 +599,7 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
     this.vehicleSource.changed();
     this.ngZone.run(() => this.emitSimulationState());
 
-    if (this.vehicles.every((vehicle) => vehicle.finished)) {
+    if (this.vehicles.every((vehicle) => vehicle.finished) || this.isTimelineComplete()) {
       this.simulationRunning = false;
       this.ngZone.run(() => this.simulationFinished.emit());
       return;
@@ -578,33 +610,30 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
 
   private animateTimeBased(): void {
     for (const vehicle of this.vehicles) {
-      if (vehicle.finished) continue;
-
-      const targetProgress = progressFromElapsed(
-        this.simulationElapsedMs,
-        vehicle.travelDurationMs
-      );
-
-      vehicle.progress = targetProgress;
-      this.syncVehicleToProgress(vehicle);
-
-      if (vehicle.fuelLiters <= 0 || vehicle.progress >= 1 - 1e-9) {
-        vehicle.finished = true;
+      if (vehicle.finished) {
+        continue;
       }
+
+      vehicle.progress = this.vehicleProgressAtTimelineMs(
+        vehicle,
+        this.simulationElapsedMs,
+        false
+      );
+      this.syncVehicleToProgress(vehicle);
+      vehicle.finished = this.isVehicleFinished(vehicle, this.simulationElapsedMs);
     }
   }
 
   private animateEventBased(): void {
     for (const vehicle of this.vehicles) {
-      if (vehicle.finished) continue;
+      if (vehicle.finished) {
+        continue;
+      }
 
-      const targetProgress = progressFromElapsed(
+      const nextProgress = this.vehicleProgressAtTimelineMs(
+        vehicle,
         this.simulationElapsedMs,
-        vehicle.travelDurationMs
-      );
-      const nextProgress = snapToPreviousEventProgress(
-        targetProgress,
-        vehicle.eventProgresses
+        true
       );
 
       if (Math.abs(nextProgress - vehicle.progress) < 1e-9) {
@@ -613,10 +642,7 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
 
       vehicle.progress = nextProgress;
       this.syncVehicleToProgress(vehicle);
-
-      if (vehicle.fuelLiters <= 0 || vehicle.progress >= 1 - 1e-9) {
-        vehicle.finished = true;
-      }
+      vehicle.finished = this.isVehicleFinished(vehicle, this.simulationElapsedMs);
     }
   }
 
@@ -632,18 +658,75 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
     this.simulationElapsedChange.emit(this.simulationElapsedMs);
   }
 
-  private getMaxSimulationDurationMs(): number {
+  private getTimelineDurationMs(): number {
+    if (this.timelineDurationMs > 0) {
+      return this.timelineDurationMs;
+    }
+
+    return this.getMaxVehicleTravelDurationMs();
+  }
+
+  private getMaxVehicleTravelDurationMs(): number {
     let maxDuration = 0;
 
     for (const vehicle of this.vehicles) {
-      maxDuration = Math.max(maxDuration, vehicle.travelDurationMs);
+      maxDuration = Math.max(maxDuration, vehicle.startOffsetMs + vehicle.travelDurationMs);
     }
 
     return maxDuration;
   }
 
   private elapsedMsForProgress(progress: number): number {
-    return progress * this.getMaxSimulationDurationMs();
+    return progress * this.getTimelineDurationMs();
+  }
+
+  private computeStartOffsetMs(startingDate: string | Date): number {
+    const startMs = new Date(startingDate).getTime();
+    if (this.timelineStartMs === null) {
+      return 0;
+    }
+
+    return Math.max(0, startMs - this.timelineStartMs);
+  }
+
+  private refreshVehicleStartOffsets(): void {
+    for (const vehicle of this.vehicles) {
+      vehicle.startOffsetMs = this.computeStartOffsetMs(vehicle.startingDate);
+    }
+  }
+
+  private vehicleElapsedMs(vehicle: VehicleRuntime, timelineElapsedMs: number): number {
+    return Math.max(0, timelineElapsedMs - vehicle.startOffsetMs);
+  }
+
+  private vehicleProgressAtTimelineMs(
+    vehicle: VehicleRuntime,
+    timelineElapsedMs: number,
+    snapToEvents: boolean
+  ): number {
+    const routeProgress = progressFromElapsed(
+      this.vehicleElapsedMs(vehicle, timelineElapsedMs),
+      vehicle.travelDurationMs
+    );
+
+    if (!snapToEvents) {
+      return routeProgress;
+    }
+
+    return snapToPreviousEventProgress(routeProgress, vehicle.eventProgresses);
+  }
+
+  private isVehicleFinished(vehicle: VehicleRuntime, timelineElapsedMs: number): boolean {
+    if (vehicle.fuelLiters <= 0 || vehicle.progress >= 1 - 1e-9) {
+      return true;
+    }
+
+    return this.vehicleElapsedMs(vehicle, timelineElapsedMs) >= vehicle.travelDurationMs;
+  }
+
+  private isTimelineComplete(): boolean {
+    const timelineDurationMs = this.getTimelineDurationMs();
+    return timelineDurationMs > 0 && this.simulationElapsedMs >= timelineDurationMs - 1e-9;
   }
 
   private refreshVehicleEventProgresses(): void {
@@ -666,15 +749,11 @@ export class AerialDeviceMapComponent implements AfterViewInit, OnChanges, OnDes
         continue;
       }
 
-      const elapsedProgress = progressFromElapsed(
+      vehicle.progress = this.vehicleProgressAtTimelineMs(
+        vehicle,
         this.simulationElapsedMs,
-        vehicle.travelDurationMs
-      );
-
-      vehicle.progress =
         this.playbackMode === 'event'
-          ? snapToPreviousEventProgress(elapsedProgress, vehicle.eventProgresses)
-          : elapsedProgress;
+      );
 
       this.syncVehicleToProgress(vehicle);
     }
