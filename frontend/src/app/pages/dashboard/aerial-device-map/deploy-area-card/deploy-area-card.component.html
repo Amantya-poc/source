@@ -1,61 +1,55 @@
 <aside class="deploy-area-card" (click)="$event.stopPropagation()" (pointerdown)="$event.stopPropagation()">
-  <div class="deploy-area-card__header">
+  <header class="deploy-area-card__header">
+    <div class="deploy-area-card__heading">
+      <span class="deploy-area-card__eyebrow">Deployment</span>
+      <h3 class="deploy-area-card__title">Deploy Area</h3>
+    </div>
     <button
       type="button"
       class="deploy-area-card__close"
       aria-label="Close"
-      pTooltip="Deselect"
+      pTooltip="Deselect area"
       tooltipPosition="left"
       (click)="closeArea.emit()"
     >
       <i class="pi pi-times" aria-hidden="true"></i>
     </button>
-  </div>
+  </header>
+
+  <p class="deploy-area-card__hint">Select a tool to edit the area on the map.</p>
 
   <div class="deploy-area-card__actions">
-    <p-button
+    <button
       type="button"
-      icon="pi pi-trash"
-      severity="danger"
-      [text]="true"
-      [rounded]="true"
-      pTooltip="Delete"
-      tooltipPosition="left"
-      aria-label="Delete"
-      (onClick)="deleteArea.emit()"
-    />
-    <p-button
+      class="deploy-area-card__action"
+      [class.deploy-area-card__action--active]="activeAction === 'move'"
+      (click)="moveArea.emit()"
+    >
+      <i class="pi pi-arrows-alt" aria-hidden="true"></i>
+      <span>Move</span>
+    </button>
+    <button
       type="button"
-      icon="pi pi-arrows-alt"
-      [text]="true"
-      [rounded]="true"
-      [severity]="activeAction === 'move' ? 'primary' : 'secondary'"
-      pTooltip="Move"
-      tooltipPosition="left"
-      aria-label="Move"
-      (onClick)="moveArea.emit()"
-    />
-    <p-button
+      class="deploy-area-card__action"
+      [class.deploy-area-card__action--active]="activeAction === 'resize'"
+      (click)="resizeArea.emit()"
+    >
+      <i class="pi pi-expand" aria-hidden="true"></i>
+      <span>Resize</span>
+    </button>
+    <button
       type="button"
-      icon="pi pi-expand"
-      [text]="true"
-      [rounded]="true"
-      [severity]="activeAction === 'resize' ? 'primary' : 'secondary'"
-      pTooltip="Resize"
-      tooltipPosition="left"
-      aria-label="Resize"
-      (onClick)="resizeArea.emit()"
-    />
-    <p-button
-      type="button"
-      icon="pi pi-sync"
-      [text]="true"
-      [rounded]="true"
-      [severity]="activeAction === 'reshape' ? 'primary' : 'secondary'"
-      pTooltip="Reshape"
-      tooltipPosition="left"
-      aria-label="Reshape"
-      (onClick)="reshapeArea.emit()"
-    />
+      class="deploy-area-card__action"
+      [class.deploy-area-card__action--active]="activeAction === 'reshape'"
+      (click)="reshapeArea.emit()"
+    >
+      <i class="pi pi-sync" aria-hidden="true"></i>
+      <span>Reshape</span>
+    </button>
   </div>
+
+  <button type="button" class="deploy-area-card__delete" (click)="deleteArea.emit()">
+    <i class="pi pi-trash" aria-hidden="true"></i>
+    <span>Delete Area</span>
+  </button>
 </aside>

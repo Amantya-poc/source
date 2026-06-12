@@ -1,16 +1,16 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
+import { DeployEditAction } from '../../../../models/deploy-area.model';
 
 @Component({
   selector: 'app-deploy-area-card',
-  imports: [ButtonModule, TooltipModule],
+  imports: [TooltipModule],
   templateUrl: './deploy-area-card.component.html',
   styleUrl: './deploy-area-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DeployAreaCardComponent {
-  @Input() activeAction: string | null = null;
+  @Input() activeAction: DeployEditAction | null = null;
 
   @Output() deleteArea = new EventEmitter<void>();
   @Output() moveArea = new EventEmitter<void>();
